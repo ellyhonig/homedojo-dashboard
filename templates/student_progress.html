@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ student.name }}'s Curriculum Progress</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <style>
+        .timeline {
+            position: relative;
+            margin: 50px 0;
+            padding: 0;
+            list-style: none;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #007bff;
+            transform: translateX(-50%);
+        }
+        .timeline-item {
+            position: relative;
+            margin: 20px 0;
+            padding-left: 50%;
+            text-align: left;
+        }
+        .timeline-item .timeline-icon {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            margin-left: -20px;
+            background: #fff;
+            border: 4px solid #007bff;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-size: 18px;
+            color: #007bff;
+            z-index: 100;
+        }
+        .timeline-item .timeline-content {
+            padding: 10px 20px;
+            background: #fff;
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-left: 30px;
+        }
+        .timeline-item .timeline-content:hover {
+            background-color: #f9f9f9;
+        }
+        .timeline-item.completed .timeline-icon {
+            background: #007bff;
+            color: #fff;
+        }
+        .timeline-item.completed .timeline-content {
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="my-4 text-center">{{ student.name }}'s Curriculum Progress</h1>
+    <ul class="timeline">
+        {% for level in student.levels %}
+        <li class="timeline-item {% if level.completed %}completed{% endif %}">
+            <div class="timeline-icon">
+                {{ level.letter }}
+            </div>
+            <div class="timeline-content" {% if level.mistake %} data-toggle="tooltip" title="Mistake: {{ level.mistake }}" {% endif %}>
+                <h5>Level {{ loop.index }}: Letter {{ level.letter }}</h5>
+                {% if level.completed %}
+                    <p>Status: Completed</p>
+                {% else %}
+                    <p>Status: Incomplete</p>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+</script>
+</body>
+</html>
