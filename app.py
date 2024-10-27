@@ -4,9 +4,9 @@ app = Flask(__name__)
 
 # Hardcoded dummy data for now
 students = [
-    {'id': 1, 'name': 'Alice', 'progress': '3/5 lessons completed'},
-    {'id': 2, 'name': 'Bob', 'progress': '2/5 lessons completed'},
-    {'id': 3, 'name': 'Charlie', 'progress': '5/5 lessons completed'}
+    {'id': 1, 'name': 'Elly', 'progress': '3/5 lessons completed'},
+    {'id': 2, 'name': 'Yeasin', 'progress': '2/5 lessons completed'},
+    {'id': 3, 'name': 'Khan', 'progress': '5/5 lessons completed'}
 ]
 
 @app.route('/')
