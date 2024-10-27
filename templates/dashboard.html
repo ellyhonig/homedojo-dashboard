@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeDojo Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Roboto", sans-serif;
+        background-color: #f8f9fa;
+      }
+
+      .container {
+        margin-top: 50px;
+      }
+
+      h1 {
+        font-weight: 500;
+        text-align: center;
+        color: #333;
+      }
+
+      .card {
+        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+      }
+
+      .progress-bar {
+        background-color: #4caf50;
+      }
+
+      .progress {
+        height: 25px;
+      }
+
+      .btn {
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+      }
+
+      .btn-info {
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+      }
+
+      .btn-info:hover {
+        background-color: #138496;
+        border-color: #117a8b;
+      }
+
+      .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+      }
+
+      .btn-primary:hover {
+        background-color: #0069d9;
+        border-color: #005cbf;
+      }
+
+      .hidden-form {
+        display: none;
+      }
+    </style>
+    <script>
+      function showAddStudentForm() {
+        document.getElementById("addStudentForm").style.display = "block";
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="my-4">HomeDojo - Student Dashboard</h1>
+
+      <!-- Student List -->
+      <div class="row">
+        {% for student in students %}
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">{{ student.name }}</h5>
+              <p class="card-text">{{ student.progress }}</p>
+
+              <!-- Progress Bar -->
+              <div class="progress mb-3">
+                <div
+                  class="progress-bar"
+                  role="progressbar"
+                  style="width: {{ student.progress_percent }}%;"
+                  aria-valuenow="{{ student.progress_percent }}"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  {{ student.progress_percent }}%
+                </div>
+              </div>
+
+              <!-- View Curriculum Progress Button -->
+              <button
+                class="btn btn-info btn-block"
+                data-toggle="modal"
+                data-target="#lessonModal{{ student.id }}"
+              >
+                View Curriculum Progress
+              </button>
+
+              <!-- Remove Student Button -->
+              <form
+                action="{{ url_for('remove_student', student_id=student.id) }}"
+                method="POST"
+                class="d-inline"
+              >
+                <button class="btn btn-danger btn-block mt-2" type="submit">
+                  Remove
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Curriculum Progress  -->
+        <div
+          class="modal fade"
+          id="lessonModal{{ student.id }}"
+          tabindex="-1"
+          role="dialog"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">
+                  Curriculum Progress for {{ student.name }}
+                </h5>
+                <button
+                  type="button"
+                  class="close"
+                  data-dismiss="modal"
+                  aria-label="Close"
+                >
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                {% for lesson in student.lessons %}
+                <h5>{{ lesson.name }} - {{ lesson.status }}</h5>
+                <p>Accuracy: {{ lesson.accuracy }}%</p>
+                <p>Common Mistakes: {{ lesson.mistakes }}</p>
+                <hr />
+                {% endfor %}
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-dismiss="modal"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Add Student Button -->
+      <button class="btn btn-primary my-4" onclick="showAddStudentForm()">
+        Add New Student
+      </button>
+
+      <div id="addStudentForm" class="hidden-form">
+        <form action="{{ url_for('add_student') }}" method="POST">
+          <div class="form-group">
+            <label for="name">Student Name:</label>
+            <input
+              type="text"
+              class="form-control"
+              id="name"
+              name="name"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-success">Add Student</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  </body>
+</html>
