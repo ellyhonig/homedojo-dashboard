@@ -72,12 +72,16 @@
             <div class="timeline-icon">
                 {{ level.letter }}
             </div>
-            <div class="timeline-content" {% if level.mistake %} data-toggle="tooltip" title="Mistake: {{ level.mistake }}" {% endif %}>
-                <h5>Level {{ loop.index }}: Letter {{ level.letter }}</h5>
+            <div class="timeline-content" {% if level.mistakes %} data-toggle="tooltip" title="Mistake: {{ level.mistakes }}" {% endif %}>
+                <h5>{{ level.name }}: Letter {{ level.letter }}</h5>
                 {% if level.completed %}
                     <p>Status: Completed</p>
+                    <p>Accuracy: {{ level.accuracy }}%</p>
                 {% else %}
                     <p>Status: Incomplete</p>
+                {% endif %}
+                {% if level.mistakes %}
+                    <p>Mistakes: {{ level.mistakes }}</p>
                 {% endif %}
             </div>
         </li>
@@ -85,8 +89,9 @@
     </ul>
 </div>
 
+<!-- Include jQuery and Bootstrap JS at the end of the body -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
 <script>
