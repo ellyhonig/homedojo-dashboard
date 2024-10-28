@@ -6,7 +6,7 @@ app = Flask(__name__)
 students = [
     {
         'id': 1,
-        'name': 'Alice',
+        'name': 'Elly',
         'levels': [
             {'name': 'Lesson 1', 'letter': 'A', 'completed': True, 'accuracy': 90, 'mistakes': 'Confused D with B'},
             {'name': 'Lesson 2', 'letter': 'C', 'completed': True, 'accuracy': 85, 'mistakes': 'Confused C with G'},
@@ -28,7 +28,7 @@ students = [
     },
     {
         'id': 3,
-        'name': 'Charlie',
+        'name': 'Yeasin',
         'levels': [
             {'name': 'Lesson 1', 'letter': 'B', 'completed': True, 'accuracy': 95, 'mistakes': 'Confused B with D'},
             {'name': 'Lesson 2', 'letter': 'O', 'completed': True, 'accuracy': 90, 'mistakes': ''},
@@ -59,7 +59,6 @@ def add_student():
     if request.method == 'POST':
         new_id = len(students) + 1
         new_name = request.form['name']
-        # Initialize default levels
         default_levels = [
             {'name': 'Lesson 1', 'letter': 'A', 'completed': False, 'accuracy': 0, 'mistakes': ''},
             {'name': 'Lesson 2', 'letter': 'B', 'completed': False, 'accuracy': 0, 'mistakes': ''},
@@ -83,6 +82,17 @@ def remove_student(student_id):
     global students
     students = [s for s in students if s['id'] != student_id]
     return redirect(url_for('dashboard'))
+
+@app.route('/skip_to_level/<int:student_id>/<int:level_index>', methods=['POST'])
+def skip_to_level(student_id, level_index):
+    student = next((s for s in students if s['id'] == student_id), None)
+    if student:
+        for i in range(len(student['levels'])):
+            if i <= level_index:
+                student['levels'][i]['completed'] = True
+            else:
+                student['levels'][i]['completed'] = False
+    return redirect(url_for('student_progress', student_id=student_id))
 
 if __name__ == '__main__':
     app.run(debug=True)
