@@ -5,6 +5,14 @@
     <title>{{ student.name }}'s Curriculum Progress</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: "Roboto", sans-serif;
+        }
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
         .timeline {
             position: relative;
             margin: 50px 0;
@@ -14,42 +22,45 @@
         .timeline::before {
             content: '';
             position: absolute;
-            left: 50%;
+            left: 30px;
             top: 0;
             bottom: 0;
             width: 4px;
             background: #007bff;
-            transform: translateX(-50%);
         }
         .timeline-item {
             position: relative;
-            margin: 20px 0;
-            padding-left: 50%;
-            text-align: left;
+            margin-bottom: 50px;
+            padding-left: 60px;
         }
         .timeline-item .timeline-icon {
             position: absolute;
-            left: 50%;
-            top: 0;
-            width: 40px;
-            height: 40px;
-            margin-left: -20px;
+            left: 12px;
+            width: 36px;
+            height: 36px;
             background: #fff;
             border: 4px solid #007bff;
             border-radius: 50%;
             text-align: center;
-            line-height: 32px;
+            line-height: 28px;
             font-size: 18px;
             color: #007bff;
             z-index: 100;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .timeline-item .timeline-icon:hover {
+            background-color: #007bff;
+            color: #fff;
         }
         .timeline-item .timeline-content {
-            padding: 10px 20px;
             background: #fff;
-            position: relative;
+            padding: 15px 20px;
+            border-radius: 10px;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-left: 30px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.3s;
         }
         .timeline-item .timeline-content:hover {
             background-color: #f9f9f9;
@@ -64,39 +75,71 @@
     </style>
 </head>
 <body>
-<div class="container">
-    <h1 class="my-4 text-center">{{ student.name }}'s Curriculum Progress</h1>
-    <ul class="timeline">
-        {% for level in student.levels %}
-        <li class="timeline-item {% if level.completed %}completed{% endif %}">
-            <div class="timeline-icon">
-                {{ level.letter }}
-            </div>
-            <div class="timeline-content" {% if level.mistakes %} data-toggle="tooltip" title="Mistake: {{ level.mistakes }}" {% endif %}>
-                <h5>{{ level.name }}: Letter {{ level.letter }}</h5>
-                {% if level.completed %}
-                    <p>Status: Completed</p>
-                    <p>Accuracy: {{ level.accuracy }}%</p>
-                {% else %}
-                    <p>Status: Incomplete</p>
-                {% endif %}
-                {% if level.mistakes %}
-                    <p>Mistakes: {{ level.mistakes }}</p>
-                {% endif %}
-            </div>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('dashboard') }}">HomeDojo</a>
+        <span class="navbar-text">
+            {{ student.name }}'s Progress
+        </span>
+      </div>
+    </nav>
 
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <div class="container">
+        <ul class="timeline">
+            {% for level in student.levels %}
+            <li class="timeline-item {% if level.completed %}completed{% endif %}">
+                <div class="timeline-icon" data-toggle="modal" data-target="#skipModal{{ loop.index0 }}">
+                    {{ level.letter }}
+                </div>
+                <div class="timeline-content" {% if level.mistakes %} data-toggle="tooltip" title="Mistake: {{ level.mistakes }}" {% endif %}>
+                    <h5>{{ level.name }}: Letter {{ level.letter }}</h5>
+                    {% if level.completed %}
+                        <p>Status: <span class="text-success">Completed</span></p>
+                        <p>Accuracy: {{ level.accuracy }}%</p>
+                    {% else %}
+                        <p>Status: <span class="text-danger">Incomplete</span></p>
+                    {% endif %}
+                    {% if level.mistakes %}
+                        <p>Mistakes: {{ level.mistakes }}</p>
+                    {% endif %}
+                </div>
+            </li>
 
-<script>
-    $(function () {
-        $('[data-toggle="tooltip"]').tooltip()
-    })
-</script>
+            <div class="modal fade" id="skipModal{{ loop.index0 }}" tabindex="-1" aria-labelledby="skipModalLabel{{ loop.index0 }}" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form action="{{ url_for('skip_to_level', student_id=student.id, level_index=loop.index0) }}" method="POST">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="skipModalLabel{{ loop.index0 }}">Change Progress to {{ level.name }}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Are you sure you want to change the student's progress to this level? All levels after this will be marked as incomplete.</p>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Yes, Change Progress</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                      </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            {% endfor %}
+        </ul>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
 </body>
 </html>
