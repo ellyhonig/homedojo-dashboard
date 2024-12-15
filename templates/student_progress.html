@@ -93,7 +93,7 @@
                     {{ level.letter }}
                 </div>
                 <div class="timeline-content" {% if level.mistakes %} data-toggle="tooltip" title="Mistake: {{ level.mistakes }}" {% endif %}>
-                    <h5>{{ level.name }}: Letter {{ level.letter }}</h5>
+                    <h5>{{ level.level_name }}: New Letter: {{ level.new_letter }}</h5>
                     {% if level.completed %}
                         <p>Status: <span class="text-success">Completed</span></p>
                         <p>Accuracy: {{ level.accuracy }}%</p>
