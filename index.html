@@ -3,23 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <title>HomeDojo Dashboard</title>
-    <!-- Firebase (Test Config) -->
-    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-firestore.js"></script>
-    <script>
-      // Dummy/test Firebase config
-      var firebaseConfig = {
-        apiKey: "test",
-        authDomain: "test.firebaseapp.com",
-        projectId: "test",
-        storageBucket: "test.appspot.com",
-        messagingSenderId: "test",
-        appId: "test"
-      };
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-      var db = firebase.firestore();
-    </script>
 
     <!-- Bootstrap CSS -->
     <link
@@ -31,6 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap"
       rel="stylesheet"
     />
+
     <style>
       body {
         font-family: "Roboto", sans-serif;
@@ -106,6 +90,31 @@
         display: none;
       }
     </style>
+
+    <!-- Firebase (ES Module) with Hardcoded API Keys -->
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js";
+
+      // Your web app's Firebase configuration (Test Code)
+      const firebaseConfig = {
+        apiKey: "AIzaSyA_f94XSrBcmuge4VSD8avpgJ6iWRpOC3g",
+        authDomain: "homedojo-dashboard.firebaseapp.com",
+        projectId: "homedojo-dashboard",
+        storageBucket: "homedojo-dashboard.firebasestorage.app",
+        messagingSenderId: "670214855619",
+        appId: "1:670214855619:web:3b315c075fa731b71f7b76",
+        measurementId: "G-T84RT56CLF"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+
+      // (Optional) You can add any Firestore or Auth code here if needed.
+    </script>
+
     <script>
       // Show hidden form for adding a new student
       function showAddStudentForm() {
@@ -150,10 +159,7 @@
                 class="btn btn-info btn-block"
                 >View Curriculum Progress</a
               >
-
-              <button class="btn btn-danger btn-block mt-2">
-                Remove
-              </button>
+              <button class="btn btn-danger btn-block mt-2">Remove</button>
             </div>
           </div>
         </div>
@@ -183,10 +189,7 @@
                 class="btn btn-info btn-block"
                 >View Curriculum Progress</a
               >
-
-              <button class="btn btn-danger btn-block mt-2">
-                Remove
-              </button>
+              <button class="btn btn-danger btn-block mt-2">Remove</button>
             </div>
           </div>
         </div>
@@ -216,10 +219,7 @@
                 class="btn btn-info btn-block"
                 >View Curriculum Progress</a
               >
-
-              <button class="btn btn-danger btn-block mt-2">
-                Remove
-              </button>
+              <button class="btn btn-danger btn-block mt-2">Remove</button>
             </div>
           </div>
         </div>
