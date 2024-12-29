@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <title>Student Curriculum Progress</title>
+
+    <!-- Bootstrap CSS -->
     <link
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
@@ -77,11 +79,17 @@
       }
     </style>
 
-    <!-- Firebase (ES Module) with Hardcoded API Keys -->
+    <!-- Firebase + Firestore (ES Modules) -->
     <script type="module">
-      // Import the functions you need from the SDKs you need
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        updateDoc,
+        arrayUnion,
+        arrayRemove
+      } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
       // Your web app's Firebase configuration (Test Code)
       const firebaseConfig = {
@@ -94,11 +102,205 @@
         measurementId: "G-T84RT56CLF"
       };
 
-      // Initialize Firebase
       const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
+      const db = getFirestore(app);
 
-      // (Optional) You can add any Firestore or Auth code here if needed.
+      let studentNameSpan;
+      let timelineUL;
+      let studentId; // from query param
+      let studentDocData; // doc data object
+
+      window.addEventListener("DOMContentLoaded", async () => {
+        studentNameSpan = document.getElementById("studentNameSpan");
+        timelineUL = document.getElementById("timelineList");
+
+        // Grab ?id= from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        studentId = urlParams.get("id");
+        if (!studentId) {
+          alert("No student ID provided in URL!");
+          return;
+        }
+
+        // Fetch that student's doc & populate timeline
+        await loadStudentData();
+      });
+
+      // --------------------------------------------------
+      // Load Student Data & Build Timeline
+      // --------------------------------------------------
+      async function loadStudentData() {
+        try {
+          const docRef = doc(db, "students", studentId);
+          const snapshot = await getDoc(docRef);
+          if (!snapshot.exists()) {
+            alert("Student not found in Firestore!");
+            return;
+          }
+          studentDocData = snapshot.data();
+
+          // Update navbar to say "X's Progress"
+          studentNameSpan.textContent = studentDocData.Name + "'s Progress";
+
+          // Render levels in timeline
+          renderTimeline(studentDocData.Levels || []);
+        } catch (err) {
+          console.error("Error loading student doc:", err);
+        }
+      }
+
+      // --------------------------------------------------
+      // Render the timeline of lessons
+      // --------------------------------------------------
+      function renderTimeline(levelsArray) {
+        timelineUL.innerHTML = "";
+
+        levelsArray.forEach((lvl, idx) => {
+          const completedClass = lvl.completed ? "completed" : "";
+          const mistakesText = lvl.mistakes && lvl.mistakes.length
+            ? `Mistakes: ${lvl.mistakes.join(", ")}`
+            : "";
+
+          // Timeline item
+          const li = document.createElement("li");
+          li.classList.add("timeline-item", completedClass);
+
+          // Icon
+          const iconDiv = document.createElement("div");
+          iconDiv.classList.add("timeline-icon");
+          iconDiv.dataset.toggle = "modal";
+          iconDiv.dataset.target = `#skipModal${idx}`;
+          iconDiv.textContent = lvl.new_letter?.slice(0, 1) || "?";
+
+          // Content
+          const contentDiv = document.createElement("div");
+          contentDiv.classList.add("timeline-content");
+          // Optional tooltip for mistakes
+          if (lvl.mistakes && lvl.mistakes.length > 0) {
+            contentDiv.setAttribute("data-toggle", "tooltip");
+            contentDiv.setAttribute("title", mistakesText);
+          }
+
+          // Title
+          const h5 = document.createElement("h5");
+          h5.textContent = `${lvl.level_name}: New Letter: ${lvl.new_letter}`;
+
+          // Status line
+          const statusP = document.createElement("p");
+          if (lvl.completed) {
+            statusP.innerHTML = `Status: <span class="text-success">Completed</span>`;
+          } else {
+            statusP.innerHTML = `Status: <span class="text-danger">Incomplete</span>`;
+          }
+
+          // Accuracy line (only if completed)
+          const accuracyP = document.createElement("p");
+          if (lvl.completed) {
+            accuracyP.textContent = `Accuracy: ${lvl.accuracy || 0}%`;
+          }
+
+          // Mistakes line (if any)
+          const mistakesP = document.createElement("p");
+          if (mistakesText) mistakesP.textContent = mistakesText;
+
+          // Append elements
+          contentDiv.appendChild(h5);
+          contentDiv.appendChild(statusP);
+          if (lvl.completed) {
+            contentDiv.appendChild(accuracyP);
+          }
+          if (mistakesText) {
+            contentDiv.appendChild(mistakesP);
+          }
+
+          li.appendChild(iconDiv);
+          li.appendChild(contentDiv);
+          timelineUL.appendChild(li);
+
+          // Add a skip modal for each level
+          addSkipModal(idx, lvl, levelsArray);
+        });
+      }
+
+      // --------------------------------------------------
+      // Create a Bootstrap modal for skipping to level idx
+      // --------------------------------------------------
+      function addSkipModal(index, levelData, levelsArray) {
+        const modalDiv = document.createElement("div");
+        modalDiv.classList.add("modal", "fade");
+        modalDiv.id = `skipModal${index}`;
+        modalDiv.tabIndex = -1;
+        modalDiv.setAttribute("aria-labelledby", `skipModalLabel${index}`);
+        modalDiv.setAttribute("aria-hidden", "true");
+
+        modalDiv.innerHTML = `
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form id="skipForm${index}">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="skipModalLabel${index}">
+                    Change Progress to ${levelData.level_name}
+                  </h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <p>Are you sure you want to change the student's progress to this level? All levels after this will be marked as incomplete.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary">Yes, Change Progress</button>
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+
+        // Append to the body (or container)
+        document.body.appendChild(modalDiv);
+
+        // On form submit => skipToLevel
+        const form = modalDiv.querySelector(`#skipForm${index}`);
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          await skipToLevel(index);
+          // Hide the modal
+          // (Bootstrap >=4.5 jQuery approach)
+          $(`#skipModal${index}`).modal("hide");
+        });
+      }
+
+      // --------------------------------------------------
+      // Skip to a specific level index:
+      //    => all levels up to index = completed
+      //    => all levels after index = incomplete
+      // --------------------------------------------------
+      async function skipToLevel(levelIndex) {
+        try {
+          const updatedLevels = [...studentDocData.Levels];
+          updatedLevels.forEach((lvl, idx) => {
+            if (idx <= levelIndex) {
+              lvl.completed = true;
+              if (!lvl.accuracy) lvl.accuracy = 80; // e.g., or keep existing if any
+            } else {
+              lvl.completed = false;
+              lvl.accuracy = 0;
+            }
+          });
+          // Save updated Levels to Firestore
+          const docRef = doc(db, "students", studentId);
+          await updateDoc(docRef, {
+            Levels: updatedLevels
+          });
+          alert(`Progress changed to level: ${updatedLevels[levelIndex].level_name}`);
+          // Refresh local data
+          studentDocData.Levels = updatedLevels;
+          renderTimeline(updatedLevels);
+        } catch (err) {
+          console.error("Error skipping to level:", err);
+        }
+      }
     </script>
   </head>
   <body>
@@ -106,208 +308,12 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white">
       <div class="container">
         <a class="navbar-brand" href="index.html">HomeDojo</a>
-        <span class="navbar-text">John Doe's Progress</span>
+        <span class="navbar-text" id="studentNameSpan">Loading...</span>
       </div>
     </nav>
 
     <div class="container">
-      <ul class="timeline">
-        <!-- Level 1 -->
-        <li class="timeline-item completed">
-          <div
-            class="timeline-icon"
-            data-toggle="modal"
-            data-target="#skipModal1"
-          >
-            A
-          </div>
-          <div class="timeline-content">
-            <h5>Level 1: New Letter: A</h5>
-            <p>Status: <span class="text-success">Completed</span></p>
-            <p>Accuracy: 95%</p>
-            <p>Mistakes: None</p>
-          </div>
-        </li>
-
-        <!-- Modal for skipping (dummy) -->
-        <div
-          class="modal fade"
-          id="skipModal1"
-          tabindex="-1"
-          aria-labelledby="skipModalLabel1"
-          aria-hidden="true"
-        >
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <form>
-                <div class="modal-header">
-                  <h5 class="modal-title" id="skipModalLabel1">
-                    Change Progress to Level 1
-                  </h5>
-                  <button
-                    type="button"
-                    class="close"
-                    data-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <p>
-                    Are you sure you want to change the student's progress
-                    to this level? All levels after this will be marked
-                    as incomplete.
-                  </p>
-                </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">
-                    Yes, Change Progress
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-secondary"
-                    data-dismiss="modal"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <!-- Level 2 -->
-        <li class="timeline-item completed">
-          <div
-            class="timeline-icon"
-            data-toggle="modal"
-            data-target="#skipModal2"
-          >
-            B
-          </div>
-          <div class="timeline-content">
-            <h5>Level 2: New Letter: B</h5>
-            <p>Status: <span class="text-success">Completed</span></p>
-            <p>Accuracy: 88%</p>
-            <p>Mistakes: Missed once on letter B</p>
-          </div>
-        </li>
-
-        <!-- Modal for skipping (dummy) -->
-        <div
-          class="modal fade"
-          id="skipModal2"
-          tabindex="-1"
-          aria-labelledby="skipModalLabel2"
-          aria-hidden="true"
-        >
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <form>
-                <div class="modal-header">
-                  <h5 class="modal-title" id="skipModalLabel2">
-                    Change Progress to Level 2
-                  </h5>
-                  <button
-                    type="button"
-                    class="close"
-                    data-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <p>
-                    Are you sure you want to change the student's progress
-                    to this level? All levels after this will be marked
-                    as incomplete.
-                  </p>
-                </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">
-                    Yes, Change Progress
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-secondary"
-                    data-dismiss="modal"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <!-- Level 3 -->
-        <li class="timeline-item">
-          <div
-            class="timeline-icon"
-            data-toggle="modal"
-            data-target="#skipModal3"
-          >
-            C
-          </div>
-          <div class="timeline-content">
-            <h5>Level 3: New Letter: C</h5>
-            <p>Status: <span class="text-danger">Incomplete</span></p>
-            <p>Mistakes: None (yet)</p>
-          </div>
-        </li>
-
-        <!-- Modal for skipping (dummy) -->
-        <div
-          class="modal fade"
-          id="skipModal3"
-          tabindex="-1"
-          aria-labelledby="skipModalLabel3"
-          aria-hidden="true"
-        >
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <form>
-                <div class="modal-header">
-                  <h5 class="modal-title" id="skipModalLabel3">
-                    Change Progress to Level 3
-                  </h5>
-                  <button
-                    type="button"
-                    class="close"
-                    data-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <p>
-                    Are you sure you want to change the student's progress
-                    to this level? All levels after this will be marked
-                    as incomplete.
-                  </p>
-                </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">
-                    Yes, Change Progress
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-secondary"
-                    data-dismiss="modal"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <!-- Add more levels as needed... -->
-      </ul>
+      <ul class="timeline" id="timelineList"></ul>
     </div>
 
     <!-- Bootstrap JS and dependencies -->
@@ -319,8 +325,8 @@
       src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
     ></script>
     <script>
-      // Enable tooltips if needed
       $(function () {
+        // Enable any tooltips
         $('[data-toggle="tooltip"]').tooltip();
       });
     </script>
