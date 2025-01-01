@@ -1,295 +1,575 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>HomeDojo Dashboard</title>
+<head>
+  <meta charset="UTF-8" />
+  <title>Curriculum Dash - Finally Fixed</title>
 
-    <!-- Bootstrap CSS -->
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-    />
-    <!-- Google Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      body {
-        font-family: "Roboto", sans-serif;
-        background-color: #f0f2f5;
-      }
-      .container {
-        margin-top: 50px;
-      }
-      h1 {
-        font-weight: 500;
-        text-align: center;
-        color: #333;
-      }
-      .card {
-        margin-bottom: 20px;
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s;
-        background-color: #ffffff;
-      }
-      .card:hover {
-        transform: translateY(-10px);
-      }
-      .progress {
-        height: 15px;
-        background-color: #e9ecef;
-        border-radius: 7.5px;
-      }
-      .progress-bar {
-        background-color: #28a745;
-      }
-      .btn {
-        border-radius: 50px;
-        transition: background-color 0.3s ease;
-      }
-      .btn-info {
-        background-color: #17a2b8;
-        border: none;
-      }
-      .btn-info:hover {
-        background-color: #138496;
-      }
-      .btn-danger {
-        background-color: #dc3545;
-        border: none;
-      }
-      .btn-danger:hover {
-        background-color: #c82333;
-      }
-      .btn-primary {
-        background-color: #007bff;
-        border: none;
-      }
-      .btn-primary:hover {
-        background-color: #0069d9;
-      }
-      .hidden-form {
-        display: none;
-      }
-    </style>
+  <!-- Bootstrap CSS -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+  <style>
+    body {
+      background-color: #f0f2f5;
+      font-family: "Roboto", sans-serif;
+    }
+    .navbar {
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .column-box {
+      border: 2px dashed #ccc;
+      min-height: 300px;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+    .tile {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      margin: 5px;
+      background: #007bff;
+      color: #fff;
+      border-radius: 5px;
+      text-align: center;
+      line-height: 50px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: move;
+      user-select: none;
+      vertical-align: middle;
+    }
+    .plan-container {
+      position: relative;
+      min-height: 300px;
+      border: 2px dashed #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      background-color: #fff;
+    }
+    .progress-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background-color: rgba(40, 167, 69, 0.3);
+      z-index: 1;
+      pointer-events: none;
+      transition: width 0.4s;
+    }
+    .plan-tiles {
+      position: relative;
+      z-index: 2;
+    }
+    .placeholder {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      margin: 5px;
+      border: 2px dashed #28a745;
+      border-radius: 5px;
+      vertical-align: middle;
+    }
+  </style>
 
-    <!-- Firebase + Firestore (ES Modules) -->
-    <script type="module">
-      // -----------------------------
-      //  Firebase Config & Init
-      // -----------------------------
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-      import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+  <!-- Firebase + Firestore (ES Modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-      // Your web app's Firebase configuration (Test Code)
-      const firebaseConfig = {
-        apiKey: "AIzaSyA_f94XSrBcmuge4VSD8avpgJ6iWRpOC3g",
-        authDomain: "homedojo-dashboard.firebaseapp.com",
-        projectId: "homedojo-dashboard",
-        storageBucket: "homedojo-dashboard.firebasestorage.app",
-        messagingSenderId: "670214855619",
-        appId: "1:670214855619:web:3b315c075fa731b71f7b76",
-        measurementId: "G-T84RT56CLF"
-      };
+    // ================  Your API Key  ================
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_f94XSrBcmuge4VSD8avpgJ6iWRpOC3g",
+      authDomain: "homedojo-dashboard.firebaseapp.com",
+      projectId: "homedojo-dashboard",
+      storageBucket: "homedojo-dashboard.firebasestorage.app",
+      messagingSenderId: "670214855619",
+      appId: "1:670214855619:web:3b315c075fa731b71f7b76",
+      measurementId: "G-T84RT56CLF"
+    };
 
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-      // -----------------------------
-      //  DOM Elements
-      // -----------------------------
-      let studentsRow; 
-      let addStudentForm; 
-      let studentNameInput; 
+    // Current student
+    let currentStudentId = null;
+    let lettersInPlan = []; // from doc.levelplan[0].Letters
+    let progressIndex = 0;
+    let undoStack = [];
 
-      window.addEventListener("DOMContentLoaded", async () => {
-        studentsRow = document.getElementById("studentsRow");
-        addStudentForm = document.getElementById("addStudentForm");
-        studentNameInput = document.getElementById("name");
+    // All letters
+    const ALL_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-        // Fetch & display all students from Firestore
-        await fetchAndDisplayStudents();
+    // Dragging state
+    // { from: "letters", letter: "A" } or { from: "plan", index: 2 }
+    let draggingInfo = null;
 
-        // Handle form submission (Add Student)
-        addStudentForm.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const name = studentNameInput.value.trim();
-          if (!name) return;
+    // DOM elements
+    let planContainer = null;     // <div id="planTiles">
+    let letterBox = null;         // <div id="letterBox">
 
-          // Add a new student doc with placeholder "Levels"
-          const newStudent = {
-            Name: name,
-            Levels: [
-              {
-                level_name: "Lesson 1",
-                new_letter: "A",
-                completed: false,
-                accuracy: 0,
-                mistakes: []
-              }
-            ]
-          };
-          try {
-            await addDoc(collection(db, "students"), newStudent);
-            alert(`Student ${name} added!`);
-            studentNameInput.value = "";
-            // Refresh list
-            await fetchAndDisplayStudents();
-          } catch (error) {
-            console.error("Error adding student:", error);
-          }
-        });
+    // We'll maintain a single placeholder for the plan
+    let placeholder = null;       // <div class="placeholder">
+    let placeholderIndex = null;  // the index in lettersInPlan to insert
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      planContainer = document.getElementById("planTiles");
+      letterBox = document.getElementById("letterBox");
+
+      // Build the letter box with A-Z
+      ALL_LETTERS.forEach(letter => {
+        letterBox.appendChild(createLetterTile(letter));
       });
 
-      // -----------------------------
-      //  Fetch & Display Students
-      // -----------------------------
-      async function fetchAndDisplayStudents() {
-        studentsRow.innerHTML = ""; // clear existing
-        try {
-          const snapshot = await getDocs(collection(db, "students"));
-          snapshot.forEach((docSnap) => {
-            const studentData = docSnap.data();
-            const docId = docSnap.id;
-            renderStudentCard(docId, studentData);
+      // Allow dropping from plan => letter box to remove from plan
+      letterBox.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      });
+      letterBox.addEventListener("drop", (e) => {
+        e.preventDefault();
+        if (!draggingInfo) return;
+        // If it's from the plan, remove from plan
+        if (draggingInfo.from === "plan") {
+          pushUndoState();
+          lettersInPlan.splice(draggingInfo.index, 1);
+          progressIndex = Math.min(progressIndex, lettersInPlan.length);
+          saveStudentData().then(() => renderPlan());
+        }
+        draggingInfo = null;
+        removePlaceholder();
+      });
+
+      // Our brand new approach: single dragover & drop on plan
+      planContainer.addEventListener("dragover", handlePlanDragOver);
+      planContainer.addEventListener("drop", handlePlanDrop);
+
+      // Listen globally for dropping outside both plan & letterBox
+      document.addEventListener("drop", handleGlobalDrop);
+
+      // Now load students
+      await loadAllStudents();
+    });
+
+    // ----------------------------------------------------
+    // Firestore: load students
+    // ----------------------------------------------------
+    async function loadAllStudents() {
+      const sel = document.getElementById("studentSelect");
+      sel.innerHTML = `<option value="">--Select Student--</option>`;
+      try {
+        const snap = await getDocs(collection(db, "students"));
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          const docId = docSnap.id;
+          const name = data.Name || docId;
+          const opt = document.createElement("option");
+          opt.value = docId;
+          opt.textContent = name;
+          sel.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("Error loading students:", err);
+      }
+    }
+
+    window.onStudentChanged = async function() {
+      const sel = document.getElementById("studentSelect");
+      const studentId = sel.value;
+      if (!studentId) {
+        currentStudentId = null;
+        lettersInPlan = [];
+        progressIndex = 0;
+        renderPlan();
+        return;
+      }
+      currentStudentId = studentId;
+      await loadStudentData(studentId);
+      renderPlan();
+      updateProgressLine();
+    };
+
+    async function loadStudentData(studentId) {
+      try {
+        const docRef = doc(db, "students", studentId);
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) {
+          await setDoc(docRef, {
+            Name: "Unknown",
+            levelplan: [
+              { Letters: [], Phonemes: [], Modes: [] }
+            ],
+            progressIndex: 0
           });
-        } catch (err) {
-          console.error("Error fetching students:", err);
+          lettersInPlan = [];
+          progressIndex = 0;
+          return;
+        }
+
+        const data = snap.data();
+        let levelplanArray = data.levelplan || [];
+        if (levelplanArray.length === 0) {
+          levelplanArray = [{ Letters: [] }];
+        }
+        lettersInPlan = levelplanArray[0].Letters || [];
+        progressIndex = data.progressIndex || 0;
+      } catch (err) {
+        console.error("Error loading doc:", err);
+      }
+    }
+
+    async function saveStudentData() {
+      if (!currentStudentId) return;
+      try {
+        const docRef = doc(db, "students", currentStudentId);
+        const newLp = [
+          {
+            Letters: lettersInPlan,
+            Phonemes: ["BUH","AH"],
+            Modes: ["TraceChecking","ObjectPlacing"]
+          }
+        ];
+        await updateDoc(docRef, {
+          levelplan: newLp,
+          progressIndex: progressIndex
+        });
+        console.log("Saved to Firestore:", lettersInPlan);
+      } catch (err) {
+        console.error("Error saving doc:", err);
+      }
+    }
+
+    // ----------------------------------------------------
+    // Create Tiles
+    // ----------------------------------------------------
+    function createLetterTile(letter) {
+      const tile = document.createElement("div");
+      tile.classList.add("tile");
+      tile.draggable = true;
+      tile.textContent = letter;
+
+      tile.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", letter);
+        e.dataTransfer.effectAllowed = "move";
+        draggingInfo = { from: "letters", letter };
+      });
+      tile.addEventListener("dragend", () => {
+        draggingInfo = null;
+        removePlaceholder();
+      });
+      return tile;
+    }
+
+    function createPlanTile(letter, index) {
+      const tile = document.createElement("div");
+      tile.classList.add("tile");
+      tile.draggable = true;
+      tile.textContent = letter;
+      tile.dataset.index = index;
+
+      tile.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", letter);
+        e.dataTransfer.effectAllowed = "move";
+        draggingInfo = { from: "plan", index };
+      });
+      tile.addEventListener("dragend", () => {
+        draggingInfo = null;
+        removePlaceholder();
+      });
+
+      return tile;
+    }
+
+    // ----------------------------------------------------
+    // Rendering Plan
+    // ----------------------------------------------------
+    function renderPlan() {
+      planContainer.innerHTML = "";
+      lettersInPlan.forEach((letter, idx) => {
+        planContainer.appendChild(createPlanTile(letter, idx));
+      });
+      updateProgressLine();
+    }
+
+    // ----------------------------------------------------
+    // Single DRAGOVER on Plan Container
+    // => find nearest tile to show placeholder
+    // ----------------------------------------------------
+    function handlePlanDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+
+      // If we have no tiles in plan, placeholder goes at the end
+      const tiles = [...planContainer.querySelectorAll(".tile")];
+      if (tiles.length === 0) {
+        showPlaceholderEnd();
+        return;
+      }
+
+      // We'll decide which tile we should insert *before*
+      // by comparing the mouse's X position to each tile's center.
+      // (You could also compare Y if stacked vertically, etc.)
+      let foundSpot = false;
+      for (let i = 0; i < tiles.length; i++) {
+        const rect = tiles[i].getBoundingClientRect();
+
+        // We check if the mouse is left of the tile's horizontal midpoint (also check vertical range).
+        // This logic might differ if you want a purely horizontal or vertical arrangement.
+        const tileCenterX = rect.left + rect.width / 2;
+        const tileTop = rect.top;
+        const tileBottom = rect.bottom;
+
+        if (e.clientX < tileCenterX && e.clientY >= tileTop && e.clientY <= tileBottom) {
+          // Insert placeholder before tile i
+          showPlaceholderBefore(tiles[i], i);
+          foundSpot = true;
+          break;
         }
       }
 
-      // -----------------------------
-      //  Render Student Card
-      // -----------------------------
-      function renderStudentCard(docId, studentData) {
-        // Calculate progress percentage:
-        const levels = studentData.Levels || [];
-        const completedCount = levels.filter((lvl) => lvl.completed).length;
-        const totalCount = levels.length;
-        const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-        
-        // "Progress label" could be last completed lesson, or we just show completedCount/total
-        const progressLabel = `Completed ${completedCount} of ${totalCount} Lessons`;
+      // If not found, we place placeholder at end
+      if (!foundSpot) {
+        showPlaceholderEnd();
+      }
+    }
 
-        // Create col
-        const col = document.createElement("div");
-        col.classList.add("col-md-4");
+    // Insert placeholder before the given tile
+    function showPlaceholderBefore(refTile, index) {
+      initPlaceholder();
+      removePlaceholder(); // remove first to re-insert
+      placeholderIndex = index;
+      refTile.parentNode.insertBefore(placeholder, refTile);
+    }
 
-        // Create card
-        const card = document.createElement("div");
-        card.classList.add("card");
+    function showPlaceholderEnd() {
+      initPlaceholder();
+      removePlaceholder();
+      const tiles = planContainer.querySelectorAll(".tile");
+      placeholderIndex = tiles.length; // after last tile
+      planContainer.appendChild(placeholder);
+    }
 
-        const cardBody = document.createElement("div");
-        cardBody.classList.add("card-body", "text-center");
+    function initPlaceholder() {
+      if (!placeholder) {
+        placeholder = document.createElement("div");
+        placeholder.classList.add("placeholder");
+      }
+    }
 
-        const title = document.createElement("h5");
-        title.classList.add("card-title");
-        title.textContent = studentData.Name;
+    function removePlaceholder() {
+      if (placeholder && placeholder.parentNode) {
+        placeholder.parentNode.removeChild(placeholder);
+      }
+    }
 
-        const text = document.createElement("p");
-        text.classList.add("card-text");
-        text.textContent = progressLabel;
+    // ----------------------------------------------------
+    // Single DROP on Plan Container
+    // => Insert at placeholderIndex
+    // ----------------------------------------------------
+    function handlePlanDrop(e) {
+      e.preventDefault();
+      if (!draggingInfo) return;
+      pushUndoState();
 
-        // Progress bar
-        const progressDiv = document.createElement("div");
-        progressDiv.classList.add("progress", "mb-3");
-        const progressBar = document.createElement("div");
-        progressBar.classList.add("progress-bar");
-        progressBar.setAttribute("role", "progressbar");
-        progressBar.style.width = `${progressPercent}%`;
-        progressBar.setAttribute("aria-valuenow", progressPercent.toString());
-        progressBar.setAttribute("aria-valuemin", "0");
-        progressBar.setAttribute("aria-valuemax", "100");
-        progressBar.textContent = `${progressPercent}%`;
-        progressDiv.appendChild(progressBar);
-
-        // "View Curriculum Progress" => progress.html with ?id=docId
-        const viewBtn = document.createElement("a");
-        viewBtn.classList.add("btn", "btn-info", "btn-block");
-        viewBtn.href = `progress.html?id=${docId}`;
-        viewBtn.textContent = "View Curriculum Progress";
-
-        // "Remove" button => removeStudent(docId)
-        const removeBtn = document.createElement("button");
-        removeBtn.classList.add("btn", "btn-danger", "btn-block", "mt-2");
-        removeBtn.textContent = "Remove";
-        removeBtn.addEventListener("click", async () => {
-          const confirmDel = confirm(`Remove ${studentData.Name}?`);
-          if (!confirmDel) return;
-          try {
-            await deleteDoc(doc(db, "students", docId));
-            alert(`Student ${studentData.Name} removed.`);
-            fetchAndDisplayStudents(); // refresh
-          } catch (err) {
-            console.error("Error removing student:", err);
-          }
-        });
-
-        // Append everything
-        cardBody.appendChild(title);
-        cardBody.appendChild(text);
-        cardBody.appendChild(progressDiv);
-        cardBody.appendChild(viewBtn);
-        cardBody.appendChild(removeBtn);
-        card.appendChild(cardBody);
-        col.appendChild(card);
-
-        studentsRow.appendChild(col);
+      // If the user never hovered over any tile, we put at end
+      // but we probably already set placeholderIndex in handlePlanDragOver
+      if (placeholderIndex == null) {
+        placeholderIndex = lettersInPlan.length;
       }
 
-      // Show hidden form
-      window.showAddStudentForm = function() {
-        const formWrapper = document.getElementById("addStudentFormWrapper");
-        formWrapper.style.display = "block";
-      };
-    </script>
-  </head>
-  <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-      <div class="container">
-        <a class="navbar-brand" href="index.html">HomeDojo</a>
-      </div>
-    </nav>
+      if (draggingInfo.from === "letters") {
+        lettersInPlan.splice(placeholderIndex, 0, draggingInfo.letter);
+      } else if (draggingInfo.from === "plan") {
+        // reorder
+        const oldIndex = draggingInfo.index;
+        const [moved] = lettersInPlan.splice(oldIndex, 1);
 
+        // If we removed from an earlier slot, and insertion is after that, shift index
+        let newIndex = placeholderIndex;
+        if (oldIndex < newIndex) {
+          newIndex--;
+        }
+        lettersInPlan.splice(newIndex, 0, moved);
+      }
+      // Save & Re-render
+      saveStudentData().then(() => renderPlan());
+
+      // Cleanup
+      removePlaceholder();
+      placeholderIndex = null;
+      draggingInfo = null;
+    }
+
+    // ----------------------------------------------------
+    // Global Drop => remove from plan if outside both plan & letterBox
+    // ----------------------------------------------------
+    function handleGlobalDrop(e) {
+      if (!draggingInfo) return;
+
+      const planRect = planContainer.getBoundingClientRect();
+      const boxRect = letterBox.getBoundingClientRect();
+      const x = e.clientX;
+      const y = e.clientY;
+
+      // If it's from plan and truly outside both plan & letter box => remove from plan
+      const outsidePlan =
+        x < planRect.left ||
+        x > planRect.right ||
+        y < planRect.top ||
+        y > planRect.bottom;
+      const outsideBox =
+        x < boxRect.left ||
+        x > boxRect.right ||
+        y < boxRect.top ||
+        y > boxRect.bottom;
+
+      if (draggingInfo.from === "plan" && outsidePlan && outsideBox) {
+        pushUndoState();
+        lettersInPlan.splice(draggingInfo.index, 1);
+        progressIndex = Math.min(progressIndex, lettersInPlan.length);
+        saveStudentData().then(() => renderPlan());
+      }
+      draggingInfo = null;
+      removePlaceholder();
+      placeholderIndex = null;
+    }
+
+    // ----------------------------------------------------
+    // Undo & Reset
+    // ----------------------------------------------------
+    function pushUndoState() {
+      undoStack.push({
+        lettersInPlan: [...lettersInPlan],
+        progressIndex
+      });
+    }
+
+    async function undoLast() {
+      if (undoStack.length === 0) {
+        alert("Nothing to undo!");
+        return;
+      }
+      const prev = undoStack.pop();
+      lettersInPlan = [...prev.lettersInPlan];
+      progressIndex = prev.progressIndex;
+      await saveStudentData();
+      renderPlan();
+    }
+
+    async function resetPlan() {
+      if (!currentStudentId) {
+        alert("Select a student first!");
+        return;
+      }
+      pushUndoState();
+      lettersInPlan = [...ALL_LETTERS];  // populate with A–Z
+      progressIndex = 0;
+      await saveStudentData();
+      renderPlan();
+    }
+
+    // ----------------------------------------------------
+    // Progress line
+    // ----------------------------------------------------
+    function updateProgressLine() {
+      const line = document.getElementById("progressLine");
+      if (!line) return;
+
+      if (lettersInPlan.length === 0) {
+        line.style.width = "0px";
+        return;
+      }
+      const fraction = Math.min(progressIndex / lettersInPlan.length, 1);
+      const w = planContainer.scrollWidth * fraction;
+      line.style.width = `${w}px`;
+    }
+
+    async function markNextLetterComplete() {
+      if (!currentStudentId) {
+        alert("Select a student first!");
+        return;
+      }
+      if (progressIndex < lettersInPlan.length) {
+        progressIndex++;
+        await saveStudentData();
+        updateProgressLine();
+      }
+    }
+
+    // Expose globally
+    window.undoLast = undoLast;
+    window.resetPlan = resetPlan;
+    window.markNextLetterComplete = markNextLetterComplete;
+  </script>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white mb-3">
     <div class="container">
-      <h1 class="my-4">Student Dashboard</h1>
+      <span class="navbar-brand">Curriculum Dash - Finally Fixed</span>
+      <div class="ml-auto">
+        <button class="btn btn-warning mr-2" onclick="undoLast()">Undo</button>
+        <button class="btn btn-danger" onclick="resetPlan()">Reset</button>
+      </div>
+    </div>
+  </nav>
 
-      <!-- Row of students -->
-      <div class="row" id="studentsRow"></div>
-
-      <!-- Button to show "Add New Student" form -->
-      <button class="btn btn-primary my-4" onclick="showAddStudentForm()">
-        Add New Student
-      </button>
-
-      <!-- Hidden form to add new student -->
-      <div id="addStudentFormWrapper" class="hidden-form">
-        <form id="addStudentForm">
-          <div class="form-group">
-            <label for="name">Student Name:</label>
-            <input
-              type="text"
-              class="form-control"
-              id="name"
-              name="name"
-              required
-            />
-          </div>
-          <button type="submit" class="btn btn-success">Add Student</button>
-        </form>
+  <div class="container mb-4">
+    <!-- Student Selector -->
+    <div class="form-group row">
+      <label for="studentSelect" class="col-sm-2 col-form-label">Select Student:</label>
+      <div class="col-sm-10">
+        <select id="studentSelect" class="form-control" onchange="onStudentChanged()">
+          <!-- Populated by loadAllStudents() -->
+        </select>
       </div>
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
-    ></script>
-  </body>
+    <div class="row">
+      <!-- Letter Box -->
+      <div class="col-md-4">
+        <h5>All Letters</h5>
+        <div id="letterBox" class="column-box"></div>
+      </div>
+
+      <!-- Plan -->
+      <div class="col-md-8">
+        <h5>Current Plan (levelplan[0].Letters)</h5>
+        <div class="plan-container">
+          <div id="progressLine" class="progress-line"></div>
+          <div id="planTiles" class="plan-tiles"></div>
+        </div>
+        <small class="text-muted">
+          - **Drag letters** into the plan: we find the tile nearest your cursor & show a placeholder.<br>
+          - **Drop** to insert exactly at that placeholder spot—no more forced bottom placement!<br>
+          - **Drag from plan → letter box** to remove from plan. Drag outside both to delete.<br>
+          - Use **Reset** to populate A–Z, or Undo to revert.<br>
+        </small>
+        <hr />
+        <button class="btn btn-info" onclick="markNextLetterComplete()">
+          Mark Next Letter Complete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap + jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"
+  ></script>
+  <script
+    src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+  ></script>
+</body>
 </html>

@@ -1,334 +1,547 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Student Curriculum Progress</title>
+<head>
+  <meta charset="UTF-8" />
+  <title>Curriculum Dash - levelplan reorder</title>
 
-    <!-- Bootstrap CSS -->
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-    />
-    <style>
-      body {
-        background-color: #f0f2f5;
-        font-family: "Roboto", sans-serif;
-      }
-      .navbar {
-        background-color: #fff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .timeline {
-        position: relative;
-        margin: 50px 0;
-        padding: 0;
-        list-style: none;
-      }
-      .timeline::before {
-        content: "";
-        position: absolute;
-        left: 30px;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: #007bff;
-      }
-      .timeline-item {
-        position: relative;
-        margin-bottom: 50px;
-        padding-left: 60px;
-      }
-      .timeline-item .timeline-icon {
-        position: absolute;
-        left: 12px;
-        width: 36px;
-        height: 36px;
-        background: #fff;
-        border: 4px solid #007bff;
-        border-radius: 50%;
-        text-align: center;
-        line-height: 28px;
-        font-size: 18px;
-        color: #007bff;
-        z-index: 100;
-        cursor: pointer;
-        transition: background-color 0.3s, color 0.3s;
-      }
-      .timeline-item .timeline-icon:hover {
-        background-color: #007bff;
-        color: #fff;
-      }
-      .timeline-item .timeline-content {
-        background: #fff;
-        padding: 15px 20px;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        position: relative;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        transition: background-color 0.3s;
-      }
-      .timeline-item .timeline-content:hover {
-        background-color: #f9f9f9;
-      }
-      .timeline-item.completed .timeline-icon {
-        background: #007bff;
-        color: #fff;
-      }
-      .timeline-item.completed .timeline-content {
-        border-color: #007bff;
-      }
-    </style>
+  <!-- Bootstrap CSS -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+  <style>
+    body {
+      background-color: #f0f2f5;
+      font-family: "Roboto", sans-serif;
+    }
+    .navbar {
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .column-box {
+      border: 2px dashed #ccc;
+      min-height: 300px;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+    .tile {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      margin: 5px;
+      background: #007bff;
+      color: #fff;
+      border-radius: 5px;
+      text-align: center;
+      line-height: 50px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: move;
+      user-select: none;
+    }
 
-    <!-- Firebase + Firestore (ES Modules) -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-      import {
-        getFirestore,
-        doc,
-        getDoc,
-        updateDoc,
-        arrayUnion,
-        arrayRemove
-      } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    .plan-container {
+      position: relative;
+      min-height: 300px;
+      border: 2px dashed #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      background-color: #fff;
+    }
 
-      // Your web app's Firebase configuration (Test Code)
-      const firebaseConfig = {
-        apiKey: "AIzaSyA_f94XSrBcmuge4VSD8avpgJ6iWRpOC3g",
-        authDomain: "homedojo-dashboard.firebaseapp.com",
-        projectId: "homedojo-dashboard",
-        storageBucket: "homedojo-dashboard.firebasestorage.app",
-        messagingSenderId: "670214855619",
-        appId: "1:670214855619:web:3b315c075fa731b71f7b76",
-        measurementId: "G-T84RT56CLF"
-      };
+    .progress-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background-color: rgba(40, 167, 69, 0.3); /* translucent green */
+      z-index: 1;
+      pointer-events: none;
+      transition: width 0.4s;
+    }
 
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+    .plan-tiles {
+      position: relative;
+      z-index: 2;
+    }
 
-      let studentNameSpan;
-      let timelineUL;
-      let studentId; // from query param
-      let studentDocData; // doc data object
+    /* Placeholder for insertion when reordering */
+    .placeholder {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      margin: 5px;
+      border: 2px dashed #28a745;
+      border-radius: 5px;
+      vertical-align: middle;
+    }
+  </style>
 
-      window.addEventListener("DOMContentLoaded", async () => {
-        studentNameSpan = document.getElementById("studentNameSpan");
-        timelineUL = document.getElementById("timelineList");
+  <!-- Firebase + Firestore (ES Modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // Grab ?id= from the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        studentId = urlParams.get("id");
-        if (!studentId) {
-          alert("No student ID provided in URL!");
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_...", 
+      authDomain: "homedojo-dashboard.firebaseapp.com",
+      projectId: "homedojo-dashboard",
+      storageBucket: "homedojo-dashboard.firebasestorage.app",
+      messagingSenderId: "670214855619",
+      appId: "1:670214855619:web:3b315c075fa731b71f7b76",
+      measurementId: "G-T84RT56CLF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Current Student
+    let currentStudentId = null;
+
+    // We'll store letters from doc.levelplan[0].Letters
+    let lettersInPlan = [];
+    let progressIndex = 0;
+    let undoStack = [];
+
+    // All possible letters
+    const ALL_LETTERS = [
+      "A","B","C","D","E","F","G","H","I","J",
+      "K","L","M","N","O","P","Q","R","S","T",
+      "U","V","W","X","Y","Z"
+    ];
+
+    // We’ll track a “dragged item index” or letter
+    let draggingLetter = null;    // e.g. { from: "letters", letter: "A" } or { from: "plan", index: 2 }
+    let placeholder = null;       // DOM element to show insertion point
+    let planContainer;            // reference to #planTiles
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      // Fill letter box
+      const letterBox = document.getElementById("letterBox");
+      ALL_LETTERS.forEach((letter) => {
+        const tile = createTile(letter);
+        letterBox.appendChild(tile);
+      });
+
+      planContainer = document.getElementById("planTiles");
+
+      // Load the student list
+      await loadAllStudents();
+    });
+
+    // ---------------------------------
+    // Load all students
+    // ---------------------------------
+    async function loadAllStudents() {
+      const studentSelect = document.getElementById("studentSelect");
+      studentSelect.innerHTML = `<option value="">--Select Student--</option>`;
+
+      try {
+        const snap = await getDocs(collection(db, "students"));
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          const docId = docSnap.id;
+          const name = data.Name || docId;
+
+          const option = document.createElement("option");
+          option.value = docId;
+          option.textContent = name;
+          studentSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error loading students:", error);
+      }
+    }
+
+    // Called when user selects a student
+    window.onStudentChanged = async function() {
+      const studentSelect = document.getElementById("studentSelect");
+      const newStudentId = studentSelect.value;
+      if (!newStudentId) {
+        currentStudentId = null;
+        lettersInPlan = [];
+        progressIndex = 0;
+        renderPlan();
+        return;
+      }
+
+      currentStudentId = newStudentId;
+      await loadStudentData(currentStudentId);
+      renderPlan();
+      updateProgressLine();
+    };
+
+    // ---------------------------------
+    // loadStudentData for levelplan
+    // ---------------------------------
+    async function loadStudentData(studentId) {
+      if (!studentId) return;
+      try {
+        const docRef = doc(db, "students", studentId);
+        const snapshot = await getDoc(docRef);
+        if (!snapshot.exists()) {
+          // If doc doesn't exist, create it
+          await setDoc(docRef, {
+            Name: "Unnamed",
+            levelplan: [
+              {
+                Letters: [],
+                Phonemes: [],
+                Modes: []
+              }
+            ],
+            progressIndex: 0
+          });
+          lettersInPlan = [];
+          progressIndex = 0;
           return;
         }
 
-        // Fetch that student's doc & populate timeline
-        await loadStudentData();
+        const data = snapshot.data();
+        let lpArray = data.levelplan || [];
+        if (lpArray.length === 0) {
+          lpArray = [{
+            Letters: [],
+            Phonemes: [],
+            Modes: []
+          }];
+        }
+        lettersInPlan = lpArray[0].Letters || [];
+        progressIndex = data.progressIndex || 0;
+
+      } catch (err) {
+        console.error("Error loading student data:", err);
+      }
+    }
+
+    // ---------------------------------
+    // saveStudentData
+    // ---------------------------------
+    async function saveStudentData() {
+      if (!currentStudentId) return;
+      try {
+        const docRef = doc(db, "students", currentStudentId);
+
+        const newLevelPlan = [
+          {
+            Letters: lettersInPlan,
+            Phonemes: ["BUH","AH"],    // or your real data
+            Modes: ["TraceChecking","ObjectPlacing"]
+          }
+        ];
+
+        await updateDoc(docRef, {
+          levelplan: newLevelPlan,
+          progressIndex: progressIndex
+        });
+        console.log("Saved to Firestore:", lettersInPlan);
+      } catch (error) {
+        console.error("Error saving student data:", error);
+      }
+    }
+
+    // ---------------------------------
+    // Render Plan
+    // ---------------------------------
+    function renderPlan() {
+      planContainer.innerHTML = "";
+
+      lettersInPlan.forEach((letter, index) => {
+        const tile = createPlanTile(letter, index);
+        planContainer.appendChild(tile);
+      });
+      updateProgressLine();
+    }
+
+    // Create tile for letter box
+    function createTile(letter) {
+      const tile = document.createElement("div");
+      tile.classList.add("tile");
+      tile.draggable = true;
+      tile.innerText = letter;
+
+      tile.addEventListener("dragstart", (e) => {
+        draggingLetter = { from: "letters", letter: letter };
+      });
+      tile.addEventListener("dragend", (e) => {
+        draggingLetter = null;
+      });
+      return tile;
+    }
+
+    // Create tile for the plan
+    function createPlanTile(letter, index) {
+      const tile = document.createElement("div");
+      tile.classList.add("tile");
+      tile.draggable = true;
+      tile.innerText = letter;
+
+      tile.addEventListener("dragstart", (e) => {
+        draggingLetter = { from: "plan", index: index };
+      });
+      tile.addEventListener("dragend", (e) => {
+        draggingLetter = null;
+        removePlaceholder();
       });
 
-      // --------------------------------------------------
-      // Load Student Data & Build Timeline
-      // --------------------------------------------------
-      async function loadStudentData() {
-        try {
-          const docRef = doc(db, "students", studentId);
-          const snapshot = await getDoc(docRef);
-          if (!snapshot.exists()) {
-            alert("Student not found in Firestore!");
-            return;
-          }
-          studentDocData = snapshot.data();
+      // Dragenter / Dragover / Dragleave events to show placeholder
+      tile.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        showPlaceholderBefore(tile);
+      });
+      tile.addEventListener("dragover", (e) => {
+        e.preventDefault();
+      });
+      tile.addEventListener("dragleave", (e) => {
+        // if we leave the tile, check if we are not into another tile
+        // We'll rely on "dragenter" on other tiles or container for final placement
+      });
 
-          // Update navbar to say "X's Progress"
-          studentNameSpan.textContent = studentDocData.Name + "'s Progress";
+      tile.addEventListener("drop", handleDropOnPlanTile);
 
-          // Render levels in timeline
-          renderTimeline(studentDocData.Levels || []);
-        } catch (err) {
-          console.error("Error loading student doc:", err);
+      return tile;
+    }
+
+    // ---------------------------------
+    // Placeholder Logic
+    // ---------------------------------
+    function showPlaceholderBefore(tile) {
+      removePlaceholder();
+      placeholder = document.createElement("div");
+      placeholder.classList.add("placeholder");
+      tile.parentNode.insertBefore(placeholder, tile);
+    }
+
+    function removePlaceholder() {
+      if (placeholder && placeholder.parentNode) {
+        placeholder.parentNode.removeChild(placeholder);
+      }
+      placeholder = null;
+    }
+
+    // ---------------------------------
+    // Drop Logic
+    // ---------------------------------
+    async function handleDropOnPlanTile(e) {
+      e.preventDefault();
+
+      // If we dropped on a tile, that tile is "below" the placeholder
+      // So we want to figure out the new index
+      const tile = e.currentTarget;
+      const droppedIndex = Array.prototype.indexOf.call(planContainer.children, tile);
+
+      if (!draggingLetter) return;
+      pushUndoState();
+
+      if (draggingLetter.from === "letters") {
+        // Insert new letter at position = droppedIndex
+        lettersInPlan.splice(droppedIndex, 0, draggingLetter.letter);
+        await saveStudentData();
+        renderPlan();
+
+      } else if (draggingLetter.from === "plan") {
+        // Reorder existing letter
+        const oldIndex = draggingLetter.index;
+        // Extract the letter from old index
+        const letter = lettersInPlan.splice(oldIndex, 1)[0];
+
+        // The new index might shift if oldIndex < droppedIndex
+        // Because removing an earlier item shifts subsequent indices
+        let newIndex = droppedIndex;
+        if (oldIndex < droppedIndex) {
+          newIndex = droppedIndex - 1;
         }
+
+        lettersInPlan.splice(newIndex, 0, letter);
+
+        await saveStudentData();
+        renderPlan();
       }
 
-      // --------------------------------------------------
-      // Render the timeline of lessons
-      // --------------------------------------------------
-      function renderTimeline(levelsArray) {
-        timelineUL.innerHTML = "";
+      removePlaceholder();
+      draggingLetter = null;
+    }
 
-        levelsArray.forEach((lvl, idx) => {
-          const completedClass = lvl.completed ? "completed" : "";
-          const mistakesText = lvl.mistakes && lvl.mistakes.length
-            ? `Mistakes: ${lvl.mistakes.join(", ")}`
-            : "";
+    // If we drop into an empty area of plan container (not on a tile),
+    // we should insert at the end or at some offset
+    planContainer.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+    planContainer.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      if (!draggingLetter) return;
+      if (e.target !== planContainer) return; // if we dropped on a tile, handleDropOnPlanTile triggers
 
-          // Timeline item
-          const li = document.createElement("li");
-          li.classList.add("timeline-item", completedClass);
-
-          // Icon
-          const iconDiv = document.createElement("div");
-          iconDiv.classList.add("timeline-icon");
-          iconDiv.dataset.toggle = "modal";
-          iconDiv.dataset.target = `#skipModal${idx}`;
-          iconDiv.textContent = lvl.new_letter?.slice(0, 1) || "?";
-
-          // Content
-          const contentDiv = document.createElement("div");
-          contentDiv.classList.add("timeline-content");
-          // Optional tooltip for mistakes
-          if (lvl.mistakes && lvl.mistakes.length > 0) {
-            contentDiv.setAttribute("data-toggle", "tooltip");
-            contentDiv.setAttribute("title", mistakesText);
-          }
-
-          // Title
-          const h5 = document.createElement("h5");
-          h5.textContent = `${lvl.level_name}: New Letter: ${lvl.new_letter}`;
-
-          // Status line
-          const statusP = document.createElement("p");
-          if (lvl.completed) {
-            statusP.innerHTML = `Status: <span class="text-success">Completed</span>`;
-          } else {
-            statusP.innerHTML = `Status: <span class="text-danger">Incomplete</span>`;
-          }
-
-          // Accuracy line (only if completed)
-          const accuracyP = document.createElement("p");
-          if (lvl.completed) {
-            accuracyP.textContent = `Accuracy: ${lvl.accuracy || 0}%`;
-          }
-
-          // Mistakes line (if any)
-          const mistakesP = document.createElement("p");
-          if (mistakesText) mistakesP.textContent = mistakesText;
-
-          // Append elements
-          contentDiv.appendChild(h5);
-          contentDiv.appendChild(statusP);
-          if (lvl.completed) {
-            contentDiv.appendChild(accuracyP);
-          }
-          if (mistakesText) {
-            contentDiv.appendChild(mistakesP);
-          }
-
-          li.appendChild(iconDiv);
-          li.appendChild(contentDiv);
-          timelineUL.appendChild(li);
-
-          // Add a skip modal for each level
-          addSkipModal(idx, lvl, levelsArray);
-        });
+      pushUndoState();
+      if (draggingLetter.from === "letters") {
+        lettersInPlan.push(draggingLetter.letter);
+        await saveStudentData();
+        renderPlan();
+      } else if (draggingLetter.from === "plan") {
+        const oldIndex = draggingLetter.index;
+        const letter = lettersInPlan.splice(oldIndex, 1)[0];
+        lettersInPlan.push(letter);
+        await saveStudentData();
+        renderPlan();
       }
 
-      // --------------------------------------------------
-      // Create a Bootstrap modal for skipping to level idx
-      // --------------------------------------------------
-      function addSkipModal(index, levelData, levelsArray) {
-        const modalDiv = document.createElement("div");
-        modalDiv.classList.add("modal", "fade");
-        modalDiv.id = `skipModal${index}`;
-        modalDiv.tabIndex = -1;
-        modalDiv.setAttribute("aria-labelledby", `skipModalLabel${index}`);
-        modalDiv.setAttribute("aria-hidden", "true");
+      draggingLetter = null;
+      removePlaceholder();
+    });
 
-        modalDiv.innerHTML = `
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <form id="skipForm${index}">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="skipModalLabel${index}">
-                    Change Progress to ${levelData.level_name}
-                  </h5>
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <p>Are you sure you want to change the student's progress to this level? All levels after this will be marked as incomplete.</p>
-                </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">Yes, Change Progress</button>
-                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        `;
+    // If we drop outside plan entirely => remove from plan
+    document.addEventListener("drop", handleGlobalDropOutside);
 
-        // Append to the body (or container)
-        document.body.appendChild(modalDiv);
+    async function handleGlobalDropOutside(e) {
+      // If drop is inside plan container, do nothing
+      if (planContainer.contains(e.target)) return;
+      if (!draggingLetter) return;
 
-        // On form submit => skipToLevel
-        const form = modalDiv.querySelector(`#skipForm${index}`);
-        form.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          await skipToLevel(index);
-          // Hide the modal
-          // (Bootstrap >=4.5 jQuery approach)
-          $(`#skipModal${index}`).modal("hide");
-        });
+      if (draggingLetter.from === "plan") {
+        pushUndoState();
+        lettersInPlan.splice(draggingLetter.index, 1);
+        progressIndex = Math.min(progressIndex, lettersInPlan.length);
+        await saveStudentData();
+        renderPlan();
       }
+      removePlaceholder();
+      draggingLetter = null;
+    }
 
-      // --------------------------------------------------
-      // Skip to a specific level index:
-      //    => all levels up to index = completed
-      //    => all levels after index = incomplete
-      // --------------------------------------------------
-      async function skipToLevel(levelIndex) {
-        try {
-          const updatedLevels = [...studentDocData.Levels];
-          updatedLevels.forEach((lvl, idx) => {
-            if (idx <= levelIndex) {
-              lvl.completed = true;
-              if (!lvl.accuracy) lvl.accuracy = 80; // e.g., or keep existing if any
-            } else {
-              lvl.completed = false;
-              lvl.accuracy = 0;
-            }
-          });
-          // Save updated Levels to Firestore
-          const docRef = doc(db, "students", studentId);
-          await updateDoc(docRef, {
-            Levels: updatedLevels
-          });
-          alert(`Progress changed to level: ${updatedLevels[levelIndex].level_name}`);
-          // Refresh local data
-          studentDocData.Levels = updatedLevels;
-          renderTimeline(updatedLevels);
-        } catch (err) {
-          console.error("Error skipping to level:", err);
-        }
+    // ---------------------------------
+    // Undo & Clear
+    // ---------------------------------
+    function pushUndoState() {
+      undoStack.push({
+        lettersInPlan: [...lettersInPlan],
+        progressIndex
+      });
+    }
+    async function undoLast() {
+      if (undoStack.length === 0) {
+        alert("Nothing to undo!");
+        return;
       }
-    </script>
-  </head>
-  <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white">
-      <div class="container">
-        <a class="navbar-brand" href="index.html">HomeDojo</a>
-        <span class="navbar-text" id="studentNameSpan">Loading...</span>
-      </div>
-    </nav>
+      const prev = undoStack.pop();
+      lettersInPlan = [...prev.lettersInPlan];
+      progressIndex = prev.progressIndex;
+      await saveStudentData();
+      renderPlan();
+    }
+    async function clearAll() {
+      if (!currentStudentId) {
+        alert("Select a student first!");
+        return;
+      }
+      if (lettersInPlan.length === 0) return;
+      pushUndoState();
+      lettersInPlan = [];
+      progressIndex = 0;
+      await saveStudentData();
+      renderPlan();
+    }
 
+    // ---------------------------------
+    // Progress line
+    // ---------------------------------
+    function updateProgressLine() {
+      const progressLine = document.getElementById("progressLine");
+      if (!progressLine) return;
+
+      if (lettersInPlan.length === 0) {
+        progressLine.style.width = "0px";
+        return;
+      }
+      let fraction = progressIndex / lettersInPlan.length;
+      if (fraction > 1) fraction = 1;
+
+      const containerWidth = planContainer.scrollWidth;
+      const newWidth = containerWidth * fraction;
+      progressLine.style.width = `${newWidth}px`;
+    }
+
+    async function markNextLetterComplete() {
+      if (!currentStudentId) {
+        alert("Select a student first!");
+        return;
+      }
+      if (progressIndex < lettersInPlan.length) {
+        progressIndex++;
+        await saveStudentData();
+        updateProgressLine();
+      }
+    }
+
+    // Expose globally
+    window.undoLast = undoLast;
+    window.clearAll = clearAll;
+    window.markNextLetterComplete = markNextLetterComplete;
+  </script>
+</head>
+<body>
+  <!-- Nav -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white mb-3">
     <div class="container">
-      <ul class="timeline" id="timelineList"></ul>
+      <span class="navbar-brand">Curriculum Dash - levelplan reorder</span>
+      <div class="ml-auto">
+        <button class="btn btn-warning mr-2" onclick="undoLast()">Undo</button>
+        <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mb-4">
+    <!-- Student Selector -->
+    <div class="form-group row">
+      <label for="studentSelect" class="col-sm-2 col-form-label">Select Student:</label>
+      <div class="col-sm-10">
+        <select id="studentSelect" class="form-control" onchange="onStudentChanged()">
+          <!-- Populated by loadAllStudents() -->
+        </select>
+      </div>
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
-    ></script>
-    <script>
-      $(function () {
-        // Enable any tooltips
-        $('[data-toggle="tooltip"]').tooltip();
-      });
-    </script>
-  </body>
+    <div class="row">
+      <div class="col-md-4">
+        <h5>All Letters</h5>
+        <div id="letterBox" class="column-box"></div>
+      </div>
+
+      <div class="col-md-8">
+        <h5>Current Plan (levelplan[0].Letters)</h5>
+        <div class="plan-container">
+          <div id="progressLine" class="progress-line"></div>
+          <div id="planTiles" class="plan-tiles"></div>
+        </div>
+        <small class="text-muted">
+          Drag letters <strong>into the plan</strong> (in-between other tiles or at the end).<br>
+          Drag tile <strong>out</strong> to remove from the plan.
+        </small>
+        <hr>
+        <button class="btn btn-info" onclick="markNextLetterComplete()">
+          Mark Next Letter Complete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap + jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"
+  ></script>
+  <script
+    src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+  ></script>
+</body>
 </html>
